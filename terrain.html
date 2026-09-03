@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ระดับความลึก | HydroGIS ชลาทัศน์</title>
+  <meta name="description" content="ข้อมูลระดับความลึกพื้นทะเล หาดชลาทัศน์-สมิหลา และเกาะหนู" />
+  <link rel="icon" href="https://hydrogis.surveywms.com/assets/logo.png" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html">
+        <img src="https://hydrogis.surveywms.com/assets/logo.png" alt="HydroGIS logo" class="brand-logo" />
+        <span class="brand-text">
+          <strong>HydroGIS ชลาทัศน์</strong>
+          <small>ศูนย์แผนที่สำรวจและคุณภาพน้ำ</small>
+        </span>
+      </a>
+      <nav class="main-nav">
+        <a href="quality.html">คุณภาพน้ำ</a>
+        <a href="drone.html">ภาพถ่ายโดรน</a>
+        <a href="terrain.html" class="active">ระดับความลึก</a>
+        <a href="weather.html">สภาพอากาศ</a>
+        <a class="nav-cta" href="https://hydrogis.surveywms.com/" target="_blank" rel="noopener">เข้าสู่ระบบแผนที่</a>
+      </nav>
+      <button class="nav-toggle" id="navToggle" aria-label="เปิดเมนู">☰</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Terrain -->
+    <section id="terrain" class="section">
+      <div class="container">
+        <div class="section-head">
+          <h2>ข้อมูลระดับความลึก</h2>
+        </div>
+        <div class="card-grid three-col">
+          <div class="media-card">
+            <img src="https://hydrogis.surveywms.com/assets/terrain.png" alt="หาดชลาทัศน์และหาดสมิหลา" />
+            <span>หาดชลาทัศน์และหาดสมิหลา</span>
+          </div>
+          <div class="media-card">
+            <img src="https://hydrogis.surveywms.com/assets/terrain.png" alt="ระดับพื้นชายหาด" />
+            <span>ระดับพื้นชายหาด</span>
+          </div>
+          <div class="media-card">
+            <img src="https://hydrogis.surveywms.com/assets/terrain.png" alt="ระดับพื้นเกาะหนู" />
+            <span>ระดับพื้นเกาะหนู</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>© <span id="year"></span> มหาวิทยาลัยเทคโนโลยีราชมงคลศรีวิชัย</p>
+      <p class="footer-sub">HydroGIS ชลาทัศน์ : ศูนย์แผนที่สำรวจและคุณภาพน้ำ</p>
+    </div>
+  </footer>
+
+  <script src="js/script.js"></script>
+</body>
+</html>

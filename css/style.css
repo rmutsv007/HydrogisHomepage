@@ -99,6 +99,11 @@ a {
   color: var(--color-primary);
 }
 
+.main-nav a.active {
+  color: var(--color-primary-dark);
+  font-weight: 700;
+}
+
 .nav-cta {
   background: var(--color-primary);
   color: #fff !important;
