@@ -20,10 +20,10 @@
         </span>
       </a>
       <nav class="main-nav">
-        <a href="quality.html">คุณภาพน้ำ</a>
-        <a href="drone.html">ภาพถ่ายโดรน</a>
-        <a href="terrain.html">ระดับความลึก</a>
-        <a href="weather.html">สภาพอากาศ</a>
+        <a href="#quality">คุณภาพน้ำ</a>
+        <a href="#drone">ภาพถ่ายโดรน</a>
+        <a href="#terrain">ระดับความลึก</a>
+        <a href="#weather">สภาพอากาศ</a>
         <a class="nav-cta" href="https://hydrogis.surveywms.com/" target="_blank" rel="noopener">เข้าสู่ระบบแผนที่</a>
       </nav>
       <button class="nav-toggle" id="navToggle" aria-label="เปิดเมนู">☰</button>
@@ -44,7 +44,7 @@
             <a class="btn btn-primary" href="https://hydrogis.surveywms.com/" target="_blank" rel="noopener">
               เปิดแผนที่แบบเต็มรูปแบบ
             </a>
-            <a class="btn btn-outline" href="quality.html">ดูข้อมูลคุณภาพน้ำล่าสุด</a>
+            <a class="btn btn-outline" href="#quality">ดูข้อมูลคุณภาพน้ำล่าสุด</a>
           </div>
         </div>
       </div>
@@ -52,22 +52,113 @@
 
     <!-- Quick stats -->
     <section class="quick-links container">
-      <a href="quality.html" class="quick-card">
+      <a href="#quality" class="quick-card">
         <img src="https://hydrogis.surveywms.com/assets/quality.png" alt="คุณภาพน้ำ" />
         <span>คุณภาพน้ำ</span>
       </a>
-      <a href="drone.html" class="quick-card">
+      <a href="#drone" class="quick-card">
         <img src="https://hydrogis.surveywms.com/assets/map.png" alt="ภาพถ่ายโดรน" />
         <span>ภาพถ่ายโดรน</span>
       </a>
-      <a href="terrain.html" class="quick-card">
+      <a href="#terrain" class="quick-card">
         <img src="https://hydrogis.surveywms.com/assets/terrain.png" alt="ระดับความลึก" />
         <span>ระดับความลึก</span>
       </a>
-      <a href="weather.html" class="quick-card">
+      <a href="#weather" class="quick-card">
         <img src="https://hydrogis.surveywms.com/assets/heavy-rain.png" alt="สภาพอากาศ" />
         <span>สภาพอากาศ</span>
       </a>
+    </section>
+
+    <!-- Water quality dashboard -->
+    <section id="quality" class="section">
+      <div class="container">
+        <div class="section-head">
+          <h2>ข้อมูลคุณภาพน้ำล่าสุด</h2>
+          <a href="https://hydrogis.surveywms.com/" target="_blank" rel="noopener" class="section-link">ดูทั้งหมดบนแผนที่ →</a>
+        </div>
+        <div class="card-grid" id="qualityGrid">
+          <!-- populated by script.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Bacteria -->
+    <section id="bacteria" class="section section-alt">
+      <div class="container">
+        <div class="section-head">
+          <h2>แนวโน้มผลตรวจเชื้อแบคทีเรีย</h2>
+          <a href="https://hydrogis.surveywms.com/" target="_blank" rel="noopener" class="section-link">ดูทั้งหมดบนแผนที่ →</a>
+        </div>
+        <div class="card-grid" id="bacteriaGrid">
+          <!-- populated by script.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Drone photos -->
+    <section id="drone" class="section">
+      <div class="container">
+        <div class="section-head">
+          <h2>ภาพถ่ายจากโดรน</h2>
+        </div>
+        <div class="card-grid three-col">
+          <div class="media-card">
+            <img src="https://hydrogis.surveywms.com/assets/map.png" alt="หาดชลาทัศน์และหาดสมิหลา" />
+            <span>หาดชลาทัศน์และหาดสมิหลา</span>
+          </div>
+          <div class="media-card">
+            <img src="https://hydrogis.surveywms.com/assets/map.png" alt="คลองสำโรง" />
+            <span>คลองสำโรง</span>
+          </div>
+          <div class="media-card">
+            <img src="https://hydrogis.surveywms.com/assets/map.png" alt="เกาะหนู" />
+            <span>เกาะหนู</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Terrain -->
+    <section id="terrain" class="section section-alt">
+      <div class="container">
+        <div class="section-head">
+          <h2>ข้อมูลระดับความลึก</h2>
+        </div>
+        <div class="card-grid three-col">
+          <div class="media-card">
+            <img src="https://hydrogis.surveywms.com/assets/terrain.png" alt="หาดชลาทัศน์และหาดสมิหลา" />
+            <span>หาดชลาทัศน์และหาดสมิหลา</span>
+          </div>
+          <div class="media-card">
+            <img src="https://hydrogis.surveywms.com/assets/terrain.png" alt="ระดับพื้นชายหาด" />
+            <span>ระดับพื้นชายหาด</span>
+          </div>
+          <div class="media-card">
+            <img src="https://hydrogis.surveywms.com/assets/terrain.png" alt="ระดับพื้นเกาะหนู" />
+            <span>ระดับพื้นเกาะหนู</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Weather -->
+    <section id="weather" class="section">
+      <div class="container">
+        <div class="section-head">
+          <h2>สภาพอากาศ</h2>
+        </div>
+        <div class="card-grid two-col">
+          <div class="media-card">
+            <img src="https://hydrogis.surveywms.com/assets/heavy-rain.png" alt="เรดาร์ฝน" />
+            <span>เรดาร์ฝน (Longdo Weather)</span>
+          </div>
+          <div class="media-card">
+            <img src="https://hydrogis.surveywms.com/assets/logo.png" alt="ลมและทิศทางลม" />
+            <span>ลมและทิศทางลม</span>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- CTA -->
