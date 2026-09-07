@@ -22,7 +22,7 @@
       <nav class="main-nav">
         <a href="#quality">คุณภาพน้ำ</a>
         <a href="#drone">ภาพถ่ายโดรน</a>
-        <a href="#terrain">ระดับความลึก</a>
+        <a href="#terrain">ข้อมูลลักษณะภูมิประเทศ</a>
         <a href="#weather">สภาพอากาศ</a>
         <a class="nav-cta" href="https://hydrogis.surveywms.com/" target="_blank" rel="noopener">เข้าสู่ระบบแผนที่</a>
       </nav>
@@ -62,12 +62,54 @@
       </a>
       <a href="#terrain" class="quick-card">
         <img src="https://hydrogis.surveywms.com/assets/terrain.png" alt="ระดับความลึก" />
-        <span>ระดับความลึก</span>
+        <span>ข้อมูลลักษณะภูมิประเทศ</span>
       </a>
       <a href="#weather" class="quick-card">
         <img src="https://hydrogis.surveywms.com/assets/heavy-rain.png" alt="สภาพอากาศ" />
         <span>สภาพอากาศ</span>
       </a>
+    </section>
+
+    <!-- Weather -->
+    <section id="weather" class="section">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2>สภาพอากาศวันนี้</h2>
+          </div>
+        </div>
+        <div class="weather-dashboard" id="weatherDashboard" aria-live="polite">
+          <div class="weather-main">
+            <div class="weather-location-row">
+              <span class="weather-pin"><img src="public/icon/Mylocation.svg" alt="ตำแหน่งปัจจุบัน" /></span>
+              <div>
+                <span class="weather-label">กำลังค้นหาตำแหน่ง</span>
+                <strong class="weather-location">กรุงเทพมหานคร</strong>
+              </div>
+              <span class="weather-source" id="weatherSource">กำลังโหลด</span>
+            </div>
+            <div class="weather-current">
+              <div class="weather-icon" id="weatherIcon" aria-hidden="true">☁</div>
+              <div>
+                <div class="weather-temperature"><span id="weatherTemperature">--</span><sup>°C</sup></div>
+                <p class="weather-condition" id="weatherCondition">กำลังโหลดข้อมูลสภาพอากาศ</p>
+                <p class="weather-updated" id="weatherUpdated">โปรดรอสักครู่</p>
+              </div>
+            </div>
+            <div class="weather-range">
+              <span>สูงสุด <strong id="weatherMax">--°</strong></span>
+              <span>ต่ำสุด <strong id="weatherMin">--°</strong></span>
+            </div>
+          </div>
+          <div class="weather-details">
+            <div class="weather-detail"><span class="detail-icon" aria-hidden="true">◌</span><span>อุณหภูมิที่รู้สึก</span><strong id="weatherFeels">--°C</strong></div>
+            <div class="weather-detail"><span class="detail-icon" aria-hidden="true">◒</span><span>ความชื้น</span><strong id="weatherHumidity">--%</strong></div>
+            <div class="weather-detail"><span class="detail-icon" aria-hidden="true">↝</span><span>ลม</span><strong id="weatherWind">-- กม./ชม.</strong></div>
+            <div class="weather-detail"><span class="detail-icon" aria-hidden="true">◉</span><span>ฝนสะสม</span><strong id="weatherRain">-- มม.</strong></div>
+          </div>
+        </div>
+        <p class="weather-note" id="weatherNote">ระบบจะขออนุญาตใช้ตำแหน่งเพื่อแสดงสภาพอากาศที่ตรงกับคุณ หากไม่อนุญาต ระบบจะแสดงข้อมูลกรุงเทพมหานคร</p>
+      </div>
     </section>
 
     <!-- Water quality dashboard -->
@@ -123,13 +165,13 @@
     <section id="terrain" class="section section-alt">
       <div class="container">
         <div class="section-head">
-          <h2>ข้อมูลระดับความลึก</h2>
+          <h2>ข้อมูลลักษณะภูมิประเทศ</h2>
         </div>
         <div class="card-grid three-col">
-          <div class="media-card">
-            <img src="https://hydrogis.surveywms.com/assets/terrain.png" alt="หาดชลาทัศน์และหาดสมิหลา" />
-            <span>หาดชลาทัศน์และหาดสมิหลา</span>
-          </div>
+          <a class="media-card" href="public/assets/แผนที่แสดงลักษณะภูมิประเทศ.jpeg" target="_blank" rel="noopener">
+            <img src="public/assets/แผนที่แสดงลักษณะภูมิประเทศ.jpeg" alt="แผนที่แสดงลักษณะภูมิประเทศ หาดสมิหลา-หาดชลาทัศน์" />
+            <span>แผนที่แสดงลักษณะภูมิประเทศ <br> หาดสมิหลา-หาดชลาทัศน์ จังหวัดสงขลา</span>
+          </a>
           <div class="media-card">
             <img src="https://hydrogis.surveywms.com/assets/terrain.png" alt="ระดับพื้นชายหาด" />
             <span>ระดับพื้นชายหาด</span>
@@ -137,25 +179,6 @@
           <div class="media-card">
             <img src="https://hydrogis.surveywms.com/assets/terrain.png" alt="ระดับพื้นเกาะหนู" />
             <span>ระดับพื้นเกาะหนู</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Weather -->
-    <section id="weather" class="section">
-      <div class="container">
-        <div class="section-head">
-          <h2>สภาพอากาศ</h2>
-        </div>
-        <div class="card-grid two-col">
-          <div class="media-card">
-            <img src="https://hydrogis.surveywms.com/assets/heavy-rain.png" alt="เรดาร์ฝน" />
-            <span>เรดาร์ฝน (Longdo Weather)</span>
-          </div>
-          <div class="media-card">
-            <img src="https://hydrogis.surveywms.com/assets/logo.png" alt="ลมและทิศทางลม" />
-            <span>ลมและทิศทางลม</span>
           </div>
         </div>
       </div>
