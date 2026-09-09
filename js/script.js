@@ -97,6 +97,23 @@ async function getLocationName(latitude, longitude) {
     const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?${params}`);
     if (!response.ok) throw new Error("Reverse geocoding request failed");
     const data = await response.json();
+    if (data.fallback) {
+      const current = data.fallback.current;
+      const daily = data.fallback.daily;
+      const [condition, icon, weatherTheme] = getWeatherDescription(Number(current.weather_code));
+      weatherElements.icon.textContent = icon;
+      weatherElements.dashboard.className = `weather-dashboard weather-state-${weatherTheme}`;
+      weatherElements.temperature.textContent = Math.round(current.temperature_2m);
+      weatherElements.condition.textContent = condition;
+      weatherElements.updated.textContent = "อัปเดตจากข้อมูลสำรอง";
+      weatherElements.max.textContent = `${Math.round(daily.temperature_2m_max[0])}°`;
+      weatherElements.min.textContent = `${Math.round(daily.temperature_2m_min[0])}°`;
+      weatherElements.feels.textContent = `${Math.round(current.temperature_2m)}°C`;
+      weatherElements.humidity.textContent = `${Math.round(current.relative_humidity_2m)}%`;
+      weatherElements.wind.textContent = `${Math.round(current.wind_speed_10m)} กม./ชม.`;
+      weatherElements.rain.textContent = `${Number(current.precipitation).toFixed(1)} มม.`;
+      return;
+    }
     const subdistrict = data.locality || data.localityInfo?.administrative?.find((item) => item.order === 8)?.name;
     const district = data.city || data.localityInfo?.administrative?.find((item) => item.order === 7)?.name;
     const province = data.principalSubdivision || data.localityInfo?.administrative?.find((item) => item.order === 4)?.name;
@@ -123,6 +140,9 @@ async function loadWeather(location, source = "ตำแหน่งของค
   weatherElements.note.textContent = "";
 
   const params = new URLSearchParams({ lat: location.latitude, lon: location.longitude });
+  const provinceMatch = location.label.match(/จังหวัด(.+)$/);
+  if (provinceMatch) params.set("province", provinceMatch[1]);
+  if (location.label.includes("กรุงเทพมหานคร")) params.set("province", "กรุงเทพมหานคร");
 
   try {
     const response = await fetch(`/api/weather?${params}`);
@@ -131,24 +151,29 @@ async function loadWeather(location, source = "ตำแหน่งของค
     const current = data.hourly?.WeatherForcasts?.[0]?.forecasts?.[0] || data.hourly?.WeatherForecasts?.[0]?.forecasts?.[0];
     const today = data.daily?.WeatherForecasts?.[0]?.forecasts?.[0]
       || data.daily?.weather_forecast?.locations?.[0]?.forecasts?.[0];
-    const currentData = current?.data;
+    const currentData = current?.data || today?.data || {};
     const dailyData = today?.data || {};
-    if (!currentData) throw new Error("Unexpected TMD response");
-    const [condition, icon, weatherTheme] = getWeatherDescription(Number(currentData.cond));
-    const updatedTime = new Date(current.time).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
-    const windDirection = Math.round(Number(currentData.wd10m));
+    if (!data.observed && !current?.data && !today?.data) throw new Error("Unexpected TMD response");
+    const observed = data.observed;
+    const temperature = observed?.temperature ?? Number(currentData.tc);
+    const humidity = observed?.humidity ?? Number(currentData.rh);
+    const wind = observed?.wind ?? Number(currentData.ws10m) * 3.6;
+    const rain = observed?.rain ?? Number(currentData.rain || dailyData.rain || 0);
+    const [condition, icon, weatherTheme] = getWeatherDescription(Number(currentData.cond || 3));
+    const updatedTime = current?.time ? new Date(current.time).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) : "ล่าสุด";
+    const windDirection = Math.round(Number(currentData.wd10m || 0));
 
     weatherElements.icon.textContent = icon;
     weatherElements.dashboard.className = `weather-dashboard weather-state-${weatherTheme}`;
-    weatherElements.temperature.textContent = Math.round(Number(currentData.tc));
+    weatherElements.temperature.textContent = Math.round(temperature);
     weatherElements.condition.textContent = condition;
     weatherElements.updated.textContent = `อัปเดต ${updatedTime} น. · ลมทิศ ${windDirection}°`;
-    weatherElements.max.textContent = `${Math.round(Number(dailyData.tc_max))}°`;
-    weatherElements.min.textContent = `${Math.round(Number(dailyData.tc_min))}°`;
-    weatherElements.feels.textContent = `${Math.round(Number(currentData.tc))}°C`;
-    weatherElements.humidity.textContent = `${Math.round(Number(currentData.rh))}%`;
-    weatherElements.wind.textContent = `${Math.round(Number(currentData.ws10m) * 3.6)} กม./ชม.`;
-    weatherElements.rain.textContent = `${Number(currentData.rain || dailyData.rain || 0).toFixed(1)} มม.`;
+    weatherElements.max.textContent = Number.isFinite(Number(dailyData.tc_max)) ? `${Math.round(Number(dailyData.tc_max))}°` : "--";
+    weatherElements.min.textContent = Number.isFinite(Number(dailyData.tc_min)) ? `${Math.round(Number(dailyData.tc_min))}°` : "--";
+    weatherElements.feels.textContent = `${Math.round(temperature)}°C`;
+    weatherElements.humidity.textContent = `${Math.round(humidity)}%`;
+    weatherElements.wind.textContent = `${Math.round(wind)} กม./ชม.`;
+    weatherElements.rain.textContent = `${Number(rain).toFixed(1)} มม.`;
   } catch (error) {
     weatherElements.condition.textContent = "ไม่สามารถโหลดข้อมูลได้";
     weatherElements.updated.textContent = "ลองกดอัปเดตอีกครั้งในภายหลัง";
