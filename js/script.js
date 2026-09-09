@@ -67,24 +67,15 @@ const weatherElements = {
 };
 
 const weatherCodes = {
-  0: ["ท้องฟ้าแจ่มใส", "☀", "clear"],
-  1: ["มีเมฆเล็กน้อย", "🌤", "partly-cloudy"],
-  2: ["มีเมฆบางส่วน", "⛅", "partly-cloudy"],
-  3: ["มีเมฆมาก", "☁", "cloudy"],
-  45: ["มีหมอก", "🌫", "fog"],
-  48: ["มีหมอกเกาะตัว", "🌫", "fog"],
-  51: ["ฝนปรอยเล็กน้อย", "🌦", "rain"],
-  53: ["ฝนปรอย", "🌦", "rain"],
-  55: ["ฝนปรอยหนาแน่น", "🌧", "rain"],
-  61: ["ฝนตกเล็กน้อย", "🌦", "rain"],
-  63: ["ฝนตกปานกลาง", "🌧", "rain"],
-  65: ["ฝนตกหนัก", "🌧", "rain"],
-  80: ["ฝนตกเป็นช่วงๆ", "🌦", "rain"],
-  81: ["ฝนตกเป็นช่วงๆ", "🌧", "rain"],
-  82: ["ฝนตกหนักเป็นช่วงๆ", "⛈", "storm"],
-  95: ["พายุฝนฟ้าคะนอง", "⛈", "storm"],
-  96: ["พายุฝนฟ้าคะนองและลูกเห็บ", "⛈", "storm"],
-  99: ["พายุฝนฟ้าคะนองและลูกเห็บ", "⛈", "storm"],
+  1: ["ท้องฟ้าแจ่มใส", "☀", "clear"],
+  2: ["มีเมฆบางส่วน", "🌤", "partly-cloudy"],
+  3: ["เมฆเป็นส่วนมาก", "☁", "cloudy"],
+  4: ["มีเมฆมาก", "☁", "cloudy"],
+  5: ["ฝนตกเล็กน้อย", "🌦", "rain"],
+  6: ["ฝนตกปานกลาง", "🌧", "rain"],
+  7: ["ฝนตกหนัก", "🌧", "rain"],
+  8: ["ฝนฟ้าคะนอง", "⛈", "storm"],
+  9: ["อากาศหนาวจัด", "❄", "cold"],
 };
 
 function getWeatherDescription(code) {
@@ -131,34 +122,33 @@ async function loadWeather(location, source = "ตำแหน่งของค
   weatherElements.source.textContent = source;
   weatherElements.note.textContent = "";
 
-  const params = new URLSearchParams({
-    latitude: location.latitude,
-    longitude: location.longitude,
-    current: "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,precipitation",
-    daily: "temperature_2m_max,temperature_2m_min",
-    forecast_days: 1,
-    timezone: "auto",
-  });
+  const params = new URLSearchParams({ lat: location.latitude, lon: location.longitude });
 
   try {
-    const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
+    const response = await fetch(`/api/weather?${params}`);
     if (!response.ok) throw new Error("Weather request failed");
     const data = await response.json();
-    const [condition, icon, weatherTheme] = getWeatherDescription(data.current.weather_code);
-    const updatedTime = new Date(data.current.time).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
-    const windDirection = Math.round(data.current.wind_direction_10m);
+    const current = data.hourly?.WeatherForcasts?.[0]?.forecasts?.[0] || data.hourly?.WeatherForecasts?.[0]?.forecasts?.[0];
+    const today = data.daily?.WeatherForecasts?.[0]?.forecasts?.[0]
+      || data.daily?.weather_forecast?.locations?.[0]?.forecasts?.[0];
+    const currentData = current?.data;
+    const dailyData = today?.data || {};
+    if (!currentData) throw new Error("Unexpected TMD response");
+    const [condition, icon, weatherTheme] = getWeatherDescription(Number(currentData.cond));
+    const updatedTime = new Date(current.time).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+    const windDirection = Math.round(Number(currentData.wd10m));
 
     weatherElements.icon.textContent = icon;
     weatherElements.dashboard.className = `weather-dashboard weather-state-${weatherTheme}`;
-    weatherElements.temperature.textContent = Math.round(data.current.temperature_2m);
+    weatherElements.temperature.textContent = Math.round(Number(currentData.tc));
     weatherElements.condition.textContent = condition;
     weatherElements.updated.textContent = `อัปเดต ${updatedTime} น. · ลมทิศ ${windDirection}°`;
-    weatherElements.max.textContent = `${Math.round(data.daily.temperature_2m_max[0])}°`;
-    weatherElements.min.textContent = `${Math.round(data.daily.temperature_2m_min[0])}°`;
-    weatherElements.feels.textContent = `${Math.round(data.current.apparent_temperature)}°C`;
-    weatherElements.humidity.textContent = `${Math.round(data.current.relative_humidity_2m)}%`;
-    weatherElements.wind.textContent = `${Math.round(data.current.wind_speed_10m)} กม./ชม.`;
-    weatherElements.rain.textContent = `${Number(data.current.precipitation).toFixed(1)} มม.`;
+    weatherElements.max.textContent = `${Math.round(Number(dailyData.tc_max))}°`;
+    weatherElements.min.textContent = `${Math.round(Number(dailyData.tc_min))}°`;
+    weatherElements.feels.textContent = `${Math.round(Number(currentData.tc))}°C`;
+    weatherElements.humidity.textContent = `${Math.round(Number(currentData.rh))}%`;
+    weatherElements.wind.textContent = `${Math.round(Number(currentData.ws10m) * 3.6)} กม./ชม.`;
+    weatherElements.rain.textContent = `${Number(currentData.rain || dailyData.rain || 0).toFixed(1)} มม.`;
   } catch (error) {
     weatherElements.condition.textContent = "ไม่สามารถโหลดข้อมูลได้";
     weatherElements.updated.textContent = "ลองกดอัปเดตอีกครั้งในภายหลัง";
