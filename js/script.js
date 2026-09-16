@@ -148,6 +148,23 @@ async function loadWeather(location, source = "ตำแหน่งของค
     const response = await fetch(`/api/weather?${params}`);
     if (!response.ok) throw new Error("Weather request failed");
     const data = await response.json();
+    if (data.fallback) {
+      const current = data.fallback.current;
+      const daily = data.fallback.daily;
+      const [condition, icon, weatherTheme] = getWeatherDescription(Number(current.weather_code));
+      weatherElements.icon.textContent = icon;
+      weatherElements.dashboard.className = `weather-dashboard weather-state-${weatherTheme}`;
+      weatherElements.temperature.textContent = Math.round(current.temperature_2m);
+      weatherElements.condition.textContent = condition;
+      weatherElements.updated.textContent = "อัปเดตล่าสุดจากข้อมูลสำรอง";
+      weatherElements.max.textContent = `${Math.round(daily.temperature_2m_max[0])}°`;
+      weatherElements.min.textContent = `${Math.round(daily.temperature_2m_min[0])}°`;
+      weatherElements.feels.textContent = `${Math.round(current.temperature_2m)}°C`;
+      weatherElements.humidity.textContent = `${Math.round(current.relative_humidity_2m)}%`;
+      weatherElements.wind.textContent = `${Math.round(current.wind_speed_10m)} กม./ชม.`;
+      weatherElements.rain.textContent = `${Number(current.precipitation).toFixed(1)} มม.`;
+      return;
+    }
     const current = data.hourly?.WeatherForcasts?.[0]?.forecasts?.[0] || data.hourly?.WeatherForecasts?.[0]?.forecasts?.[0];
     const today = data.daily?.WeatherForecasts?.[0]?.forecasts?.[0]
       || data.daily?.weather_forecast?.locations?.[0]?.forecasts?.[0];
@@ -160,16 +177,20 @@ async function loadWeather(location, source = "ตำแหน่งของค
     const wind = observed?.wind ?? Number(currentData.ws10m) * 3.6;
     const rain = observed?.rain ?? Number(currentData.rain || dailyData.rain || 0);
     const [condition, icon, weatherTheme] = getWeatherDescription(Number(currentData.cond || 3));
-    const updatedTime = current?.time ? new Date(current.time).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) : "ล่าสุด";
-    const windDirection = Math.round(Number(currentData.wd10m || 0));
+    const updatedTime = observed?.observedAt
+      ? new Date(observed.observedAt.replace(" ", "T") + "+07:00").toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })
+      : current?.time ? new Date(current.time).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) : "ล่าสุด";
+    const windDirection = Math.round(Number(observed?.windDirection ?? currentData.wd10m ?? 0));
 
     weatherElements.icon.textContent = icon;
     weatherElements.dashboard.className = `weather-dashboard weather-state-${weatherTheme}`;
     weatherElements.temperature.textContent = Math.round(temperature);
     weatherElements.condition.textContent = condition;
     weatherElements.updated.textContent = `อัปเดต ${updatedTime} น. · ลมทิศ ${windDirection}°`;
-    weatherElements.max.textContent = Number.isFinite(Number(dailyData.tc_max)) ? `${Math.round(Number(dailyData.tc_max))}°` : "--";
-    weatherElements.min.textContent = Number.isFinite(Number(dailyData.tc_min)) ? `${Math.round(Number(dailyData.tc_min))}°` : "--";
+    const maxTemperature = observed?.max ?? Number(dailyData.tc_max);
+    const minTemperature = observed?.min ?? Number(dailyData.tc_min);
+    weatherElements.max.textContent = Number.isFinite(Number(maxTemperature)) ? `${Math.round(Number(maxTemperature))}°` : "--";
+    weatherElements.min.textContent = Number.isFinite(Number(minTemperature)) ? `${Math.round(Number(minTemperature))}°` : "--";
     weatherElements.feels.textContent = `${Math.round(temperature)}°C`;
     weatherElements.humidity.textContent = `${Math.round(humidity)}%`;
     weatherElements.wind.textContent = `${Math.round(wind)} กม./ชม.`;

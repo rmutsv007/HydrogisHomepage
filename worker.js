@@ -1,12 +1,5 @@
 const TMD_API_BASE = "https://data.tmd.go.th/nwpapi/v1/forecast/location";
-const provinceSlugs = {
-  กรุงเทพมหานคร: "bangkok",
-  สงขลา: "songkhla",
-  ปัตตานี: "pattani",
-  ภูเก็ต: "phuket",
-  เชียงใหม่: "chiangmai",
-  นครราชสีมา: "nakhonratchasima",
-};
+const TMD_WEATHER_TODAY = "https://data.tmd.go.th/api/WeatherToday/V2/";
 
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -20,19 +13,57 @@ function readNumber(pattern, text) {
   return match ? Number(match[1]) : null;
 }
 
-async function fetchObservedWeather(province) {
-  const slug = provinceSlugs[province] || "songkhla";
-  const response = await fetch(`https://www.tmd.go.th/weather/province/${slug}`);
-  if (!response.ok) return null;
-  const text = (await response.text()).replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ");
-  const stationSection = text.split("สภาพอากาศปัจจุบันจากสถานีอุตุนิยมวิทยา")[1] || text;
-  const temperature = readNumber(/อุณหภูมิ\s+([0-9.]+)\s*°C/, stationSection);
-  const humidity = readNumber(/ความชื้นสัมพัทธ์\s+([0-9.]+)\s*%/, stationSection);
-  const wind = readNumber(/ลม\s+[^-]{0,60}-\s*([0-9.]+)\s*กม\.\/ชม\./, stationSection);
-  const rain = readNumber(/ฝนสะสมวันนี้[^0-9]*([0-9.]+)\s*มม\./, stationSection);
-  const pressure = readNumber(/ความกดอากาศ\s+([0-9.]+)\s*hPa/, stationSection);
-  if (temperature === null) return null;
-  return { temperature, humidity, wind, rain, pressure };
+function fetchWithTimeout(resource, options = {}, timeoutMs = 5000) {
+  const signal = AbortSignal.timeout(timeoutMs);
+  return fetch(resource, { ...options, signal });
+}
+
+async function safeFetch(resource, options = {}, timeoutMs = 5000) {
+  try {
+    return await fetchWithTimeout(resource, options, timeoutMs);
+  } catch (error) {
+    return null;
+  }
+}
+
+function xmlValue(tag, station) {
+  const match = station.match(new RegExp(`<${tag}[^>]*>([^<]*)</${tag}>`));
+  return match ? match[1].trim() : null;
+}
+
+async function fetchObservedWeather(latitude, longitude, env) {
+  if (!env.TMD_WEATHER_UID || !env.TMD_WEATHER_UKEY) return null;
+  const params = new URLSearchParams({ uid: env.TMD_WEATHER_UID, ukey: env.TMD_WEATHER_UKEY });
+  const response = await safeFetch(`${TMD_WEATHER_TODAY}?${params}`, {}, 5000);
+  if (!response?.ok) return null;
+  const xml = await response.text();
+  const stations = [...xml.matchAll(/<Station>([\s\S]*?)<\/Station>/g)].map((match) => match[1]);
+  let closest = null;
+
+  for (const station of stations) {
+    const stationLatitude = Number(xmlValue("Latitude", station));
+    const stationLongitude = Number(xmlValue("Longitude", station));
+    const temperature = Number(xmlValue("Temperature", station));
+    if (![stationLatitude, stationLongitude, temperature].every(Number.isFinite)) continue;
+    const distance = (stationLatitude - latitude) ** 2 + (stationLongitude - longitude) ** 2;
+    if (!closest || distance < closest.distance) {
+      closest = {
+        distance,
+        station: xmlValue("StationNameThai", station) || "สถานีตรวจวัดใกล้เคียง",
+        observedAt: xmlValue("DateTime", station),
+        temperature,
+        max: Number(xmlValue("MaxTemperature", station)),
+        min: Number(xmlValue("MinTemperature", station)),
+        humidity: Number(xmlValue("RelativeHumidity", station)),
+        wind: Number(xmlValue("WindSpeed", station)),
+        windDirection: Number(xmlValue("WindDirection", station)),
+        rain: Number(xmlValue("Rainfall", station)),
+        pressure: Number(xmlValue("MeanSeaLevelPressure", station)),
+      };
+    }
+  }
+
+  return closest;
 }
 
 async function fetchFallbackWeather(latitude, longitude) {
@@ -44,8 +75,8 @@ async function fetchFallbackWeather(latitude, longitude) {
     forecast_days: "1",
     timezone: "auto",
   });
-  const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
-  if (!response.ok) return null;
+  const response = await safeFetch(`https://api.open-meteo.com/v1/forecast?${params}`, {}, 8000);
+  if (!response?.ok) return null;
   return response.json();
 }
 
@@ -55,11 +86,12 @@ export default {
 
     if (url.pathname === "/api/weather") {
       if (request.method !== "GET") return jsonResponse({ error: "Method not allowed" }, 405);
-      if (!env.TMD_API_TOKEN) return jsonResponse({ error: "TMD API token is not configured" }, 500);
+      if (!env.TMD_API_TOKEN && (!env.TMD_WEATHER_UID || !env.TMD_WEATHER_UKEY)) {
+        return jsonResponse({ error: "TMD credentials are not configured" }, 500);
+      }
 
       const latitude = Number(url.searchParams.get("lat"));
       const longitude = Number(url.searchParams.get("lon"));
-      const province = url.searchParams.get("province") || "สงขลา";
       if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
         return jsonResponse({ error: "Valid lat and lon are required" }, 400);
       }
@@ -94,12 +126,12 @@ export default {
       });
 
       const [hourlyResult, dailyResult, observed] = await Promise.all([
-        fetch(hourlyUrl, { headers }),
-        fetch(dailyUrl, { headers }),
-        fetchObservedWeather(province).catch(() => null),
+        safeFetch(hourlyUrl, { headers }),
+        safeFetch(dailyUrl, { headers }),
+        fetchObservedWeather(latitude, longitude, env),
       ]);
-      const hourly = hourlyResult.ok ? await hourlyResult.json() : null;
-      const daily = dailyResult.ok ? await dailyResult.json() : null;
+      const hourly = hourlyResult?.ok ? await hourlyResult.json() : null;
+      const daily = dailyResult?.ok ? await dailyResult.json() : null;
       if (!observed && !hourly && !daily) {
         const fallback = await fetchFallbackWeather(latitude, longitude);
         if (!fallback) return jsonResponse({ error: "Weather data unavailable" }, 502);
