@@ -46,7 +46,7 @@
             <a class="btn btn-primary" href="https://hydrogis.surveywms.com/" target="_blank" rel="noopener">
               เปิดแผนที่แบบเต็มรูปแบบ
             </a>
-            <a class="btn btn-outline" href="#quality">ดูข้อมูลคุณภาพน้ำล่าสุด</a>
+            <a class="btn btn-outline" href="#quality">ดูข้อมูลคุณภาพน้ำ</a>
           </div>
         </div>
       </div>
@@ -131,11 +131,38 @@
     <section id="quality" class="section">
       <div class="container">
         <div class="section-head">
-          <h2>ข้อมูลคุณภาพน้ำล่าสุด</h2>
+          <h2>ข้อมูลคุณภาพน้ำ</h2>
           <a href="https://hydrogis.surveywms.com/" target="_blank" rel="noopener" class="section-link">ดูทั้งหมดบนแผนที่ →</a>
         </div>
-        <div class="card-grid" id="qualityGrid">
-          <!-- populated by script.js -->
+        <div class="quality-toolbar">
+          <label class="quality-date-control" for="qualityDateSelect">
+            <span>วันที่สำรวจ</span>
+            <select id="qualityDateSelect" class="quality-date-select" disabled>
+              <option>กำลังโหลดวันที่สำรวจ</option>
+            </select>
+          </label>
+          <p class="quality-status" id="qualityStatus" role="status" aria-live="polite">กำลังโหลดข้อมูลคุณภาพน้ำ</p>
+        </div>
+        <div class="quality-table-wrap" role="region" aria-label="ตารางผลตรวจคุณภาพน้ำ" tabindex="0">
+          <table class="quality-table">
+            <thead>
+              <tr>
+                <th scope="col" aria-sort="none"><button class="quality-column-sort" type="button" data-quality-column="time" aria-label="เรียงตามเวลา" title="เรียงตามเวลา" aria-pressed="false"><span>เวลา</span><span class="quality-sort-icon" aria-hidden="true"></span></button></th>
+                <th scope="col" aria-sort="none"><button class="quality-column-sort" type="button" data-quality-column="location" aria-label="เรียงตามจุดเก็บตัวอย่าง" title="เรียงตามจุดเก็บตัวอย่าง" aria-pressed="false"><span>จุดเก็บตัวอย่าง</span><span class="quality-sort-icon" aria-hidden="true"></span></button></th>
+                <th scope="col" aria-sort="none"><button class="quality-column-sort" type="button" data-quality-column="waterColor" aria-label="เรียงตามสีของน้ำ" title="เรียงตามสีของน้ำ" aria-pressed="false"><span>สีของน้ำ</span><span class="quality-sort-icon" aria-hidden="true"></span></button></th>
+                <th scope="col" aria-sort="none"><button class="quality-column-sort" type="button" data-quality-column="smell" aria-label="เรียงตามกลิ่น" title="เรียงตามกลิ่น" aria-pressed="false"><span>กลิ่น</span><span class="quality-sort-icon" aria-hidden="true"></span></button></th>
+                <th scope="col" aria-sort="none"><button class="quality-column-sort" type="button" data-quality-column="sediment" aria-label="เรียงตามตะกอน" title="เรียงตามตะกอน" aria-pressed="false"><span>ตะกอน</span><span class="quality-sort-icon" aria-hidden="true"></span></button></th>
+                <th scope="col" aria-sort="none"><button class="quality-column-sort" type="button" data-quality-column="ph" aria-label="เรียงตามค่า pH" title="เรียงตามค่า pH" aria-pressed="false"><span>pH</span><span class="quality-sort-icon" aria-hidden="true"></span></button></th>
+                <th scope="col" aria-sort="none"><button class="quality-column-sort" type="button" data-quality-column="oil" aria-label="เรียงตามคราบน้ำมัน" title="เรียงตามคราบน้ำมัน" aria-pressed="false"><span>คราบน้ำมัน</span><span class="quality-sort-icon" aria-hidden="true"></span></button></th>
+                <th scope="col" aria-sort="none"><button class="quality-column-sort" type="button" data-quality-column="ecoli" aria-label="เรียงตามค่า E. coli" title="เรียงตามค่า E. coli" aria-pressed="false"><span>E. coli</span><span class="quality-sort-icon" aria-hidden="true"></span></button></th>
+                <th scope="col" aria-sort="none"><button class="quality-column-sort" type="button" data-quality-column="coliform" aria-label="เรียงตามค่า Coliform" title="เรียงตามค่า Coliform" aria-pressed="false"><span>Coliform</span><span class="quality-sort-icon" aria-hidden="true"></span></button></th>
+                <th scope="col" aria-sort="none"><button class="quality-column-sort" type="button" data-quality-column="note" aria-label="เรียงตามหมายเหตุ" title="เรียงตามหมายเหตุ" aria-pressed="false"><span>หมายเหตุ</span><span class="quality-sort-icon" aria-hidden="true"></span></button></th>
+              </tr>
+            </thead>
+            <tbody id="qualityTableBody">
+              <tr><td colspan="10">กำลังโหลดข้อมูลคุณภาพน้ำ</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </section>

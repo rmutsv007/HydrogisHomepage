@@ -29,8 +29,172 @@ function renderDateCards(containerId, iconUrl, limit = 6) {
     .join("");
 }
 
-renderDateCards("qualityGrid", "https://hydrogis.surveywms.com/assets/quality.png");
 renderDateCards("bacteriaGrid", "https://hydrogis.surveywms.com/assets/bacteria.png");
+
+function formatQualityDate(value) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return "วันที่ไม่ระบุ";
+  const year = Number(match[1]);
+  const date = new Date(Date.UTC(year > 2400 ? year - 543 : year, Number(match[2]) - 1, Number(match[3])));
+  return new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(date);
+}
+
+function formatQualityTime(value) {
+  const match = String(value || "").match(/T?(\d{2}):(\d{2})/);
+  return match ? `${match[1]}:${match[2]} น.` : "เวลาไม่ระบุ";
+}
+
+function getQualityRowValues(properties) {
+  return {
+    time: formatQualityTime(properties.time),
+    location: properties.location,
+    waterColor: properties["สีของน้ำ"],
+    smell: properties["กลิ่น"],
+    sediment: properties["ตะกอน"],
+    ph: properties["ค่าความเป็นกรด-ด่าง"],
+    oil: properties["คราบน้ำมัน"],
+    ecoli: properties["E.Coli"],
+    coliform: properties.Coliform ?? properties.Colifrom,
+    note: properties["หมายเหตุ"],
+  };
+}
+
+function formatQualityCellValue(value) {
+  return value === null || value === undefined || value === "" ? "—" : String(value);
+}
+
+const qualityColumnLabels = {
+  time: "เวลา",
+  location: "จุดเก็บตัวอย่าง",
+  waterColor: "สีของน้ำ",
+  smell: "กลิ่น",
+  sediment: "ตะกอน",
+  ph: "pH",
+  oil: "คราบน้ำมัน",
+  ecoli: "E. coli",
+  coliform: "Coliform",
+  note: "หมายเหตุ",
+};
+
+const qualitySortIconSource = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAABNUlEQVR4AdyUvWoCQRSFd5M2eYOQpEuZHwiEQKqUySOkyKOlyCNoaSWIYKGWdiq+gba6fgdHmL3u+rMzIij37J173TkfM8zORXLk3+kBWZbdoFu7UHpv6NX2bb3PCv6Y9I9sNGg0gTySS2MfQNnkgfujtg0SApgB6KNLVC+DhADwTaY8vlCKBHki5yIUkKRp2sXxGxVCggEY+xCVuQMRBSBXt5J3xloNaRXRALIDMkJDjdeKClib+vnMAHws9+jOX2Lo2G5RDcMWkGdylLCAH1wzpPslCiQH4Ij1MNc5FkSf/gt1UOQAcnIQ3S8Lam3ZNblybADkBES3pCBzat33V+RKUQiQk4Nou1Q+6FFFpQCZOcgH409kQwfi1zZtvRWgl4F0UFtjX/TGaOL3isY7AUWTDuktAQAA//8acUEnAAAABklEQVQDAChOTjGWxC7EAAAAAElFTkSuQmCC";
+let activeQualityFilterColumn = "time";
+let activeQualitySortColumn = "time";
+let qualitySortDirection = "ascending";
+
+const qualityValueCollator = new Intl.Collator("th", { numeric: true, sensitivity: "base" });
+
+function updateQualitySortButtons() {
+  document.querySelectorAll(".quality-column-sort").forEach((button) => {
+    const column = button.dataset.qualityColumn;
+    const isActive = activeQualitySortColumn === column;
+    const directionLabel = qualitySortDirection === "ascending" ? "A-Z" : "Z-A";
+    button.setAttribute("aria-pressed", String(isActive));
+    button.setAttribute("aria-label", isActive ? `เรียง ${directionLabel} ตาม${qualityColumnLabels[column]}` : `เรียงตาม${qualityColumnLabels[column]}`);
+    button.title = button.getAttribute("aria-label");
+    const icon = button.querySelector(".quality-sort-icon");
+    icon.style.setProperty("--quality-sort-icon-mask", `url("${qualitySortIconSource}")`);
+    icon.classList.add("quality-sort-icon-image");
+    icon.textContent = "";
+    button.closest("th").setAttribute("aria-sort", isActive ? qualitySortDirection : "none");
+  });
+}
+
+function sortQualityByColumn(column) {
+  if (activeQualitySortColumn === column) {
+    qualitySortDirection = qualitySortDirection === "ascending" ? "descending" : "ascending";
+  } else {
+    activeQualitySortColumn = column;
+    qualitySortDirection = "ascending";
+  }
+  renderSelectedWaterQuality();
+}
+
+function renderSelectedWaterQuality() {
+  const dateSelect = document.getElementById("qualityDateSelect");
+  const tableBody = document.getElementById("qualityTableBody");
+  const status = document.getElementById("qualityStatus");
+  const survey = waterQualitySurveys.find((item) => item.layer === dateSelect?.value);
+  if (!survey || !tableBody || !status) return;
+
+  const sortedFeatures = [...survey.features];
+  if (activeQualitySortColumn) {
+    sortedFeatures.sort((first, second) => {
+      const firstValue = getQualityRowValues(first.properties || {})[activeQualitySortColumn];
+      const secondValue = getQualityRowValues(second.properties || {})[activeQualitySortColumn];
+      const firstMissing = firstValue === null || firstValue === undefined || firstValue === "";
+      const secondMissing = secondValue === null || secondValue === undefined || secondValue === "";
+      if (firstMissing || secondMissing) return firstMissing === secondMissing ? 0 : firstMissing ? 1 : -1;
+      const comparison = qualityValueCollator.compare(String(firstValue), String(secondValue));
+      return qualitySortDirection === "ascending" ? comparison : -comparison;
+    });
+  }
+  updateQualitySortButtons();
+
+  const rows = sortedFeatures.map((feature) => {
+    const values = getQualityRowValues(feature.properties || {});
+    const row = document.createElement("tr");
+    Object.values(values).forEach((value) => {
+      const cell = document.createElement("td");
+      cell.textContent = formatQualityCellValue(value);
+      if (cell.textContent !== "—") cell.title = cell.textContent;
+      row.append(cell);
+    });
+    return row;
+  });
+
+  if (!rows.length) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 10;
+    cell.textContent = "ไม่พบข้อมูลที่ตรงกับตัวกรอง";
+    row.append(cell);
+    rows.push(row);
+  }
+
+  tableBody.replaceChildren(...rows);
+  status.textContent = `${survey.features.length} จุดตรวจ · ${formatQualityDate(survey.date)}`;
+}
+
+let waterQualitySurveys = [];
+
+async function loadWaterQuality() {
+  const dateSelect = document.getElementById("qualityDateSelect");
+  const tableBody = document.getElementById("qualityTableBody");
+  const status = document.getElementById("qualityStatus");
+  if (!dateSelect || !tableBody || !status) return;
+
+  try {
+    const response = await fetch("/api/water-quality");
+    if (!response.ok) throw new Error("Water quality request failed");
+    const data = await response.json();
+    waterQualitySurveys = data.surveys || [];
+    if (!waterQualitySurveys.length) throw new Error("No water quality records");
+    dateSelect.replaceChildren(...waterQualitySurveys.map((survey) => {
+      const option = document.createElement("option");
+      option.value = survey.layer;
+      option.textContent = formatQualityDate(survey.date);
+      return option;
+    }));
+    dateSelect.disabled = false;
+    dateSelect.addEventListener("change", renderSelectedWaterQuality);
+    document.querySelectorAll(".quality-column-sort").forEach((button) => {
+      button.addEventListener("click", () => {
+        sortQualityByColumn(button.dataset.qualityColumn);
+      });
+    });
+    renderSelectedWaterQuality();
+  } catch (error) {
+    status.textContent = "ไม่สามารถโหลดข้อมูลคุณภาพน้ำได้ กรุณาลองใหม่ภายหลัง";
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 10;
+    cell.textContent = status.textContent;
+    row.append(cell);
+    tableBody.replaceChildren(row);
+  }
+}
+
+loadWaterQuality();
 
 // Mobile nav toggle
 const navToggle = document.getElementById("navToggle");

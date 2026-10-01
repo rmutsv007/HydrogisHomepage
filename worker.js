@@ -80,9 +80,69 @@ async function fetchFallbackWeather(latitude, longitude) {
   return response.json();
 }
 
+async function fetchWaterQualitySurveys() {
+  const endpoint = "https://map.surveywms.com/geoserver/ChalatatSongkhla/ows";
+  const capabilitiesUrl = new URL(endpoint);
+  capabilitiesUrl.search = new URLSearchParams({
+    service: "WFS",
+    version: "1.0.0",
+    request: "GetCapabilities",
+  });
+
+  const capabilitiesResponse = await safeFetch(capabilitiesUrl, {}, 10000);
+  if (!capabilitiesResponse?.ok) return null;
+
+  const capabilities = await capabilitiesResponse.text();
+  const layers = [...capabilities.matchAll(/<FeatureType\b[^>]*>([\s\S]*?)<\/FeatureType>/g)]
+    .map((match) => match[1].match(/<Name>(?:[^<]*:)?(WaterQuality_\d{8})<\/Name>/)?.[1])
+    .filter(Boolean)
+    .map((name) => ({
+      name,
+      date: name.match(/WaterQuality_(\d{2})(\d{2})(\d{4})/).slice(1).reverse().join("-"),
+    }))
+    .sort((first, second) => first.date.localeCompare(second.date));
+
+  if (!layers.length) return null;
+
+  const surveys = [];
+  for (let index = 0; index < layers.length; index += 4) {
+    const batch = await Promise.all(layers.slice(index, index + 4).map(async (layer) => {
+      const featureUrl = new URL(endpoint);
+      featureUrl.search = new URLSearchParams({
+        service: "WFS",
+        version: "1.0.0",
+        request: "GetFeature",
+        typeName: `ChalatatSongkhla:${layer.name}`,
+        outputFormat: "application/json",
+      });
+      const featureResponse = await safeFetch(featureUrl, {}, 10000);
+      if (!featureResponse?.ok) return null;
+
+      const data = await featureResponse.json();
+      const features = data.features || [];
+      if (!features.length) return null;
+      return {
+        layer: layer.name,
+        date: features[0].properties?.date || layer.date,
+        features,
+      };
+    }));
+    surveys.push(...batch.filter(Boolean));
+  }
+
+  return surveys.length ? { surveys } : null;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    if (url.pathname === "/api/water-quality") {
+      if (request.method !== "GET") return jsonResponse({ error: "Method not allowed" }, 405);
+      const data = await fetchWaterQualitySurveys();
+      if (!data) return jsonResponse({ error: "Water quality data unavailable" }, 502);
+      return jsonResponse(data);
+    }
 
     if (url.pathname === "/api/weather") {
       if (request.method !== "GET") return jsonResponse({ error: "Method not allowed" }, 405);
