@@ -85,6 +85,25 @@ function getWeatherDescription(code) {
   return weatherCodes[code] || ["สภาพอากาศแปรปรวน", "☁", "cloudy"];
 }
 
+function formatFeelsLike(apparentTemperature, temperature, humidity, windSpeedKmh) {
+  const apparentValue = Number(apparentTemperature);
+  if (apparentTemperature !== null && apparentTemperature !== undefined && Number.isFinite(apparentValue)) {
+    return `${Math.round(apparentValue)}°C`;
+  }
+
+  const values = [temperature, humidity, windSpeedKmh];
+  if (values.some((value) => value === null || value === undefined || !Number.isFinite(Number(value)))) {
+    return "--°C";
+  }
+
+  const temperatureValue = Number(temperature);
+  const vaporPressure = (Number(humidity) / 100) * 6.105
+    * Math.exp((17.27 * temperatureValue) / (237.7 + temperatureValue));
+  const windSpeedMs = Number(windSpeedKmh) / 3.6;
+  const feelsLike = temperatureValue + 0.33 * vaporPressure - 0.70 * windSpeedMs - 4;
+  return `${Math.round(feelsLike)}°C`;
+}
+
 function setWeatherLoading(isLoading) {
   weatherElements.dashboard?.toggleAttribute("data-loading", isLoading);
 }
@@ -111,7 +130,12 @@ async function getLocationName(latitude, longitude) {
       weatherElements.updated.textContent = "อัปเดตจากข้อมูลสำรอง";
       weatherElements.max.textContent = `${Math.round(daily.temperature_2m_max[0])}°`;
       weatherElements.min.textContent = `${Math.round(daily.temperature_2m_min[0])}°`;
-      weatherElements.feels.textContent = `${Math.round(current.temperature_2m)}°C`;
+      weatherElements.feels.textContent = formatFeelsLike(
+        current.apparent_temperature,
+        current.temperature_2m,
+        current.relative_humidity_2m,
+        current.wind_speed_10m
+      );
       weatherElements.humidity.textContent = `${Math.round(current.relative_humidity_2m)}%`;
       weatherElements.wind.textContent = `${Math.round(current.wind_speed_10m)} กม./ชม.`;
       weatherElements.rain.textContent = `${Number(current.precipitation).toFixed(1)} มม.`;
@@ -162,7 +186,12 @@ async function loadWeather(location, source = "ตำแหน่งของค
       weatherElements.updated.textContent = "อัปเดตล่าสุดจากข้อมูลสำรอง";
       weatherElements.max.textContent = `${Math.round(daily.temperature_2m_max[0])}°`;
       weatherElements.min.textContent = `${Math.round(daily.temperature_2m_min[0])}°`;
-      weatherElements.feels.textContent = `${Math.round(current.temperature_2m)}°C`;
+      weatherElements.feels.textContent = formatFeelsLike(
+        current.apparent_temperature,
+        current.temperature_2m,
+        current.relative_humidity_2m,
+        current.wind_speed_10m
+      );
       weatherElements.humidity.textContent = `${Math.round(current.relative_humidity_2m)}%`;
       weatherElements.wind.textContent = `${Math.round(current.wind_speed_10m)} กม./ชม.`;
       weatherElements.rain.textContent = `${Number(current.precipitation).toFixed(1)} มม.`;
@@ -178,6 +207,7 @@ async function loadWeather(location, source = "ตำแหน่งของค
     const temperature = observed?.temperature ?? Number(currentData.tc);
     const humidity = observed?.humidity ?? Number(currentData.rh);
     const wind = observed?.wind ?? Number(currentData.ws10m) * 3.6;
+    const feelsLike = formatFeelsLike(null, temperature, humidity, wind);
     const rain = observed?.rain ?? Number(currentData.rain || dailyData.rain || 0);
     const [condition, icon, weatherTheme] = getWeatherDescription(Number(currentData.cond || 3));
     const updatedTime = observed?.observedAt
@@ -194,7 +224,7 @@ async function loadWeather(location, source = "ตำแหน่งของค
     const minTemperature = observed?.min ?? Number(dailyData.tc_min);
     weatherElements.max.textContent = Number.isFinite(Number(maxTemperature)) ? `${Math.round(Number(maxTemperature))}°` : "--";
     weatherElements.min.textContent = Number.isFinite(Number(minTemperature)) ? `${Math.round(Number(minTemperature))}°` : "--";
-    weatherElements.feels.textContent = `${Math.round(temperature)}°C`;
+    weatherElements.feels.textContent = feelsLike;
     weatherElements.humidity.textContent = `${Math.round(humidity)}%`;
     weatherElements.wind.textContent = `${Math.round(wind)} กม./ชม.`;
     weatherElements.rain.textContent = `${Number(rain).toFixed(1)} มม.`;

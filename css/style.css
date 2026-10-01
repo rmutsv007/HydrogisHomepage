@@ -668,11 +668,6 @@ a {
   font-size: 0.85rem;
 }
 
-.footer-sub {
-  margin: 4px 0 0;
-  color: rgba(255, 255, 255, 0.5);
-}
-
 /* Responsive */
 @media (max-width: 900px) {
   .card-grid {

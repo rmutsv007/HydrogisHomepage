@@ -70,7 +70,7 @@ async function fetchFallbackWeather(latitude, longitude) {
   const params = new URLSearchParams({
     latitude,
     longitude,
-    current: "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,precipitation",
+    current: "temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,precipitation",
     daily: "temperature_2m_max,temperature_2m_min",
     forecast_days: "1",
     timezone: "auto",
