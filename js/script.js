@@ -146,6 +146,7 @@ function renderBacteriaTrend(surveys) {
           pan: { enabled: false },
           zoom: {
             mode: "x",
+            pinch: { enabled: true },
             wheel: { enabled: true, modifierKey: "ctrl" },
           },
         },
