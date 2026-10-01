@@ -10,7 +10,7 @@
   <meta property="og:description" content="ศูนย์แผนที่สำรวจและคุณภาพน้ำ หาดชลาทัศน์-สมิหลา จ.สงขลา" />
   <meta property="og:url" content="https://hydrogis-homepage.surveywms.com/" />
   <meta property="og:type" content="website" />
-  <link rel="icon" href="https://hydrogis.surveywms.com/assets/logo.png" />
+  <link rel="icon" type="image/svg+xml" href="public/icon/hydrogis-icon-v4-Tab.svg" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -18,20 +18,17 @@
   <header class="site-header">
     <div class="container header-inner">
       <a class="brand" href="#top">
-        <img src="https://hydrogis.surveywms.com/assets/logo.png" alt="HydroGIS logo" class="brand-logo" />
-        <span class="brand-text">
-          <strong>HydroGIS ชลาทัศน์</strong>
-          <small>ศูนย์แผนที่สำรวจและคุณภาพน้ำ</small>
-        </span>
+        <img src="public/icon/hydrogis-logo-v4.svg" alt="HydroGIS" class="brand-logo" />
       </a>
-      <nav class="main-nav">
+      <nav class="main-nav" id="mainNav" aria-label="เมนูหลัก">
         <a href="#quality">คุณภาพน้ำ</a>
         <a href="#drone">ภาพถ่ายโดรน</a>
         <a href="#terrain">ข้อมูลลักษณะภูมิประเทศ</a>
         <a href="#weather">สภาพอากาศ</a>
+        <a href="personnel.html">บุคลากร</a>
         <a class="nav-cta" href="https://hydrogis.surveywms.com/" target="_blank" rel="noopener">เข้าสู่ระบบแผนที่</a>
       </nav>
-      <button class="nav-toggle" id="navToggle" aria-label="เปิดเมนู">☰</button>
+      <button class="nav-toggle" id="navToggle" aria-label="เปิดเมนู" aria-controls="mainNav" aria-expanded="false">☰</button>
     </div>
   </header>
 
@@ -73,6 +70,19 @@
         <img src="https://hydrogis.surveywms.com/assets/heavy-rain.png" alt="สภาพอากาศ" />
         <span>สภาพอากาศ</span>
       </a>
+    </section>
+
+    <section class="about-hydrogis section-alt" aria-labelledby="aboutHydrogisTitle">
+      <div class="container about-hydrogis-inner">
+        <div>
+          <p class="about-kicker">ระบบข้อมูลเชิงพื้นที่ชายฝั่ง</p>
+          <h2 id="aboutHydrogisTitle">HydroGIS คืออะไร</h2>
+        </div>
+        <div class="about-description">
+          <p>HydroGIS คือระบบสารสนเทศภูมิศาสตร์ (GIS) สำหรับแสดงและเชื่อมโยงข้อมูลการสำรวจทางน้ำและพื้นที่ชายฝั่งบนแผนที่ดิจิทัล ช่วยให้เห็นข้อมูลประกอบกับตำแหน่งจริง เพื่อใช้ในการติดตามและวางแผนจัดการพื้นที่</p>
+          <a class="section-link" href="https://hydrogis.surveywms.com/" target="_blank" rel="noopener">สำรวจข้อมูลบนแผนที่ →</a>
+        </div>
+      </div>
     </section>
 
     <!-- Weather -->

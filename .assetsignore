@@ -1,6 +1,7 @@
 node_modules/
 .git/
 .wrangler/
+.dev.vars
 wrangler.jsonc
 package.json
 package-lock.json

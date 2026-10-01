@@ -36,7 +36,10 @@ renderDateCards("bacteriaGrid", "https://hydrogis.surveywms.com/assets/bacteria.
 const navToggle = document.getElementById("navToggle");
 const mainNav = document.querySelector(".main-nav");
 navToggle?.addEventListener("click", () => {
-  mainNav.classList.toggle("open");
+  const isExpanded = navToggle.getAttribute("aria-expanded") === "true";
+  navToggle.setAttribute("aria-expanded", String(!isExpanded));
+  navToggle.setAttribute("aria-label", isExpanded ? "เปิดเมนู" : "ปิดเมนู");
+  mainNav?.classList.toggle("open", !isExpanded);
 });
 
 // Footer year
@@ -220,5 +223,7 @@ function loadWeatherForUser() {
   );
 }
 
-loadWeatherForUser();
-setInterval(loadWeatherForUser, 10 * 60 * 1000);
+if (weatherElements.dashboard) {
+  loadWeatherForUser();
+  setInterval(loadWeatherForUser, 10 * 60 * 1000);
+}
