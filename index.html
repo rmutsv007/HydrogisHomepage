@@ -172,10 +172,20 @@
       <div class="container">
         <div class="section-head">
           <h2>แนวโน้มผลตรวจเชื้อแบคทีเรีย</h2>
+          <div class="bacteria-chart-modes" role="group" aria-label="เลือกชนิดผลตรวจ">
+            <button class="bacteria-chart-mode" type="button" data-bacteria-metric="ecoli" aria-pressed="true" disabled>E. coli</button>
+            <button class="bacteria-chart-mode" type="button" data-bacteria-metric="coliform" aria-pressed="false" disabled>Coliform</button>
+          </div>
           <a href="https://hydrogis.surveywms.com/" target="_blank" rel="noopener" class="section-link">ดูทั้งหมดบนแผนที่ →</a>
         </div>
-        <div class="card-grid" id="bacteriaGrid">
-          <!-- populated by script.js -->
+        <div class="bacteria-chart-info">
+          <p class="bacteria-chart-status" id="bacteriaChartStatus" role="status" aria-live="polite">กำลังโหลดผลตรวจ E. coli</p>
+          <p class="bacteria-chart-hint"><kbd>Ctrl</kbd> + หมุนล้อเมาส์เพื่อซูมเข้า/ออก</p>
+        </div>
+        <div class="bacteria-chart-stage">
+          <canvas id="bacteriaChart" role="img" aria-label="กราฟแนวโน้มผลตรวจ E. coli แยกตามจุดเก็บตัวอย่าง">
+            กราฟแนวโน้มผลตรวจ E. coli แยกตามจุดเก็บตัวอย่าง
+          </canvas>
         </div>
       </div>
     </section>
@@ -242,6 +252,9 @@
     </div>
   </footer>
 
+  <script src="node_modules/chart.js/dist/chart.umd.js"></script>
+  <script src="node_modules/hammerjs/hammer.js"></script>
+  <script src="node_modules/chartjs-plugin-zoom/dist/chartjs-plugin-zoom.js"></script>
   <script src="js/script.js"></script>
 </body>
 </html>

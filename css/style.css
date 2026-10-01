@@ -537,6 +537,82 @@ a {
   border-bottom: 0;
 }
 
+.bacteria-chart-info {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.bacteria-chart-status,
+.bacteria-chart-hint {
+  color: var(--color-muted);
+  font-size: 0.88rem;
+  margin: 0;
+}
+
+.bacteria-chart-hint {
+  font-size: 0.82rem;
+}
+
+.bacteria-chart-hint kbd {
+  background: #fff;
+  border: 1px solid #cbd9df;
+  border-radius: 4px;
+  box-shadow: 0 1px 1px rgba(27, 42, 51, 0.08);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.76rem;
+  padding: 2px 5px;
+}
+
+.bacteria-chart-modes {
+  background: #e4eef2;
+  border: 1px solid #d2e0e6;
+  border-radius: 7px;
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+}
+
+.bacteria-chart-mode {
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  color: var(--color-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  min-height: 34px;
+  padding: 6px 12px;
+}
+
+.bacteria-chart-mode[aria-pressed="true"] {
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(2, 62, 138, 0.14);
+  color: var(--color-primary-dark);
+}
+
+.bacteria-chart-mode:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.bacteria-chart-mode:focus-visible {
+  outline: 3px solid rgba(0, 119, 182, 0.3);
+  outline-offset: 2px;
+}
+
+.bacteria-chart-stage {
+  height: 440px;
+  min-width: 0;
+  position: relative;
+  width: 100%;
+}
+
 .media-card {
   background: #fff;
   border-radius: var(--radius);

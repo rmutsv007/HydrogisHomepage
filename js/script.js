@@ -29,8 +29,6 @@ function renderDateCards(containerId, iconUrl, limit = 6) {
     .join("");
 }
 
-renderDateCards("bacteriaGrid", "https://hydrogis.surveywms.com/assets/bacteria.png");
-
 function formatQualityDate(value) {
   const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!match) return "วันที่ไม่ระบุ";
@@ -82,6 +80,115 @@ let activeQualitySortColumn = "time";
 let qualitySortDirection = "ascending";
 
 const qualityValueCollator = new Intl.Collator("th", { numeric: true, sensitivity: "base" });
+let bacteriaChart;
+let activeBacteriaMetric = "ecoli";
+
+if (typeof Chart !== "undefined" && typeof ChartZoom !== "undefined") {
+  Chart.register(ChartZoom);
+}
+
+const bacteriaMetricLabels = {
+  ecoli: "E. coli",
+  coliform: "Coliform",
+};
+
+function renderBacteriaTrend(surveys) {
+  const canvas = document.getElementById("bacteriaChart");
+  const status = document.getElementById("bacteriaChartStatus");
+  if (!canvas || !status) return;
+  if (typeof Chart === "undefined") {
+    status.textContent = "ไม่สามารถโหลดกราฟแนวโน้ม E. coli ได้";
+    return;
+  }
+
+  const locations = [...new Set(surveys.flatMap((survey) =>
+    survey.features.map((feature) => feature.properties?.location).filter(Boolean)
+  ))];
+  const colors = ["#0077b6", "#c05a45", "#37805e", "#bb8618", "#7555a3", "#168a91", "#566578"];
+  const datasets = locations.map((location, index) => ({
+    label: location,
+    data: surveys.map((survey) => {
+      const sample = survey.features.find((feature) => feature.properties?.location === location);
+      const properties = sample?.properties || {};
+      const sourceValue = activeBacteriaMetric === "ecoli"
+        ? properties["E.Coli"]
+        : properties.Coliform ?? properties.Colifrom;
+      const value = Number(sourceValue);
+      return Number.isFinite(value) ? value : null;
+    }),
+    borderColor: colors[index % colors.length],
+    backgroundColor: colors[index % colors.length],
+    borderWidth: 2,
+    pointHitRadius: 14,
+    pointRadius: 3,
+    pointHoverRadius: 5,
+    tension: 0.25,
+    spanGaps: false,
+  }));
+
+  bacteriaChart?.destroy();
+  const chartDescription = `กราฟแนวโน้มผลตรวจ ${bacteriaMetricLabels[activeBacteriaMetric]} แยกตามจุดเก็บตัวอย่าง`;
+  canvas.setAttribute("aria-label", chartDescription);
+  canvas.textContent = chartDescription;
+  bacteriaChart = new Chart(canvas, {
+    type: "line",
+    data: {
+      labels: surveys.map((survey) => formatQualityDate(survey.date)),
+      datasets,
+    },
+    options: {
+      maintainAspectRatio: false,
+      responsive: true,
+      interaction: { axis: "x", intersect: true, mode: "index" },
+      plugins: {
+        zoom: {
+          limits: { x: { min: "original", max: "original", minRange: 2 } },
+          pan: { enabled: false },
+          zoom: {
+            mode: "x",
+            wheel: { enabled: true, modifierKey: "ctrl" },
+          },
+        },
+        legend: {
+          position: "bottom",
+          labels: { boxHeight: 9, boxWidth: 9, padding: 16, pointStyle: "circle", usePointStyle: true },
+        },
+        tooltip: {
+          axis: "x",
+          caretPadding: 10,
+          intersect: true,
+          mode: "index",
+          callbacks: {
+            label: (context) => `${context.dataset.label}: ${bacteriaMetricLabels[activeBacteriaMetric]} ${new Intl.NumberFormat("th-TH").format(context.parsed.y)}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          title: { display: true, text: "วันที่สำรวจ", color: "#5a6b73", font: { family: "Segoe UI, Tahoma, sans-serif" } },
+          grid: { display: false },
+          ticks: { color: "#5a6b73", maxRotation: 45, minRotation: 0 },
+        },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: bacteriaMetricLabels[activeBacteriaMetric], color: "#5a6b73", font: { family: "Segoe UI, Tahoma, sans-serif" } },
+          ticks: { color: "#5a6b73", callback: (value) => new Intl.NumberFormat("th-TH").format(value) },
+          grid: { color: "rgba(2, 62, 138, 0.09)" },
+        },
+      },
+    },
+  });
+  status.textContent = `ผลตรวจ ${bacteriaMetricLabels[activeBacteriaMetric]} · ${surveys.length} วัน · ${locations.length} จุดตรวจ`;
+}
+
+function selectBacteriaMetric(metric) {
+  if (!bacteriaMetricLabels[metric]) return;
+  activeBacteriaMetric = metric;
+  document.querySelectorAll(".bacteria-chart-mode").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.bacteriaMetric === metric));
+  });
+  renderBacteriaTrend(waterQualitySurveys);
+}
 
 function updateQualitySortButtons() {
   document.querySelectorAll(".quality-column-sort").forEach((button) => {
@@ -169,6 +276,11 @@ async function loadWaterQuality() {
     const data = await response.json();
     waterQualitySurveys = data.surveys || [];
     if (!waterQualitySurveys.length) throw new Error("No water quality records");
+    document.querySelectorAll(".bacteria-chart-mode").forEach((button) => {
+      button.disabled = false;
+      button.addEventListener("click", () => selectBacteriaMetric(button.dataset.bacteriaMetric));
+    });
+    renderBacteriaTrend(waterQualitySurveys);
     dateSelect.replaceChildren(...waterQualitySurveys.map((survey) => {
       const option = document.createElement("option");
       option.value = survey.layer;
@@ -185,6 +297,8 @@ async function loadWaterQuality() {
     renderSelectedWaterQuality();
   } catch (error) {
     status.textContent = "ไม่สามารถโหลดข้อมูลคุณภาพน้ำได้ กรุณาลองใหม่ภายหลัง";
+    const bacteriaStatus = document.getElementById("bacteriaChartStatus");
+    if (bacteriaStatus) bacteriaStatus.textContent = "ไม่สามารถโหลดแนวโน้ม E. coli ได้";
     const row = document.createElement("tr");
     const cell = document.createElement("td");
     cell.colSpan = 10;
