@@ -37,6 +37,7 @@
     <section class="hero">
       <div class="container hero-inner">
         <div class="hero-text">
+          <span class="hero-badge">ระบบสารสนเทศภูมิศาสตร์ชายฝั่งจังหวัดสงขลา</span>
           <h1>ศูนย์แผนที่สำรวจและคุณภาพน้ำ<br />หาดชลาทัศน์ - สมิหลา</h1>
           <p>
             ระบบติดตามคุณภาพน้ำ ข้อมูลแบคทีเรีย ภาพถ่ายจากโดรน ระดับความลึกพื้นทะเล
@@ -180,7 +181,10 @@
         </div>
         <div class="bacteria-chart-info">
           <p class="bacteria-chart-status" id="bacteriaChartStatus" role="status" aria-live="polite">กำลังโหลดผลตรวจ E. coli</p>
-          <p class="bacteria-chart-hint"><kbd>Ctrl</kbd> + หมุนล้อเมาส์เพื่อซูมเข้า/ออก</p>
+          <div class="bacteria-chart-controls">
+            <button class="bacteria-reset-zoom" id="bacteriaResetZoom" type="button" hidden>รีเซ็ตมุมมอง</button>
+            <p class="bacteria-chart-hint"><kbd>Ctrl</kbd> + หมุนล้อเมาส์เพื่อซูมเข้า/ออก</p>
+          </div>
         </div>
         <div class="bacteria-chart-stage">
           <canvas id="bacteriaChart" role="img" aria-label="กราฟแนวโน้มผลตรวจ E. coli แยกตามจุดเก็บตัวอย่าง">
@@ -251,6 +255,21 @@
       <p>© <span id="year"></span> HydroGIS</p>
     </div>
   </footer>
+
+  <dialog class="quicklook-modal" id="quicklookModal" aria-labelledby="quicklookTitle">
+    <div class="quicklook-window">
+      <div class="quicklook-header">
+        <span class="quicklook-title" id="quicklookTitle">พรีวิวรูปภาพ</span>
+        <div class="quicklook-actions">
+          <a class="quicklook-open" id="quicklookOpen" href="#" target="_blank" rel="noopener" hidden>เปิดแท็บใหม่ ↗</a>
+          <button class="quicklook-close" id="quicklookClose" type="button" aria-label="ปิดหน้าต่างพรีวิว">✕</button>
+        </div>
+      </div>
+      <div class="quicklook-body">
+        <img class="quicklook-image" id="quicklookImage" src="" alt="" />
+      </div>
+    </div>
+  </dialog>
 
   <script src="public/vendor/chart.umd.js"></script>
   <script src="public/vendor/hammer.js"></script>

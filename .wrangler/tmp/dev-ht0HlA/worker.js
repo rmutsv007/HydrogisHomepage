@@ -66,7 +66,7 @@ async function fetchFallbackWeather(latitude, longitude) {
   const params = new URLSearchParams({
     latitude,
     longitude,
-    current: "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,precipitation",
+    current: "temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,precipitation",
     daily: "temperature_2m_max,temperature_2m_min",
     forecast_days: "1",
     timezone: "auto"
@@ -76,9 +76,58 @@ async function fetchFallbackWeather(latitude, longitude) {
   return response.json();
 }
 __name(fetchFallbackWeather, "fetchFallbackWeather");
+async function fetchWaterQualitySurveys() {
+  const endpoint = "https://map.surveywms.com/geoserver/ChalatatSongkhla/ows";
+  const capabilitiesUrl = new URL(endpoint);
+  capabilitiesUrl.search = new URLSearchParams({
+    service: "WFS",
+    version: "1.0.0",
+    request: "GetCapabilities"
+  });
+  const capabilitiesResponse = await safeFetch(capabilitiesUrl, {}, 1e4);
+  if (!capabilitiesResponse?.ok) return null;
+  const capabilities = await capabilitiesResponse.text();
+  const layers = [...capabilities.matchAll(/<FeatureType\b[^>]*>([\s\S]*?)<\/FeatureType>/g)].map((match) => match[1].match(/<Name>(?:[^<]*:)?(WaterQuality_\d{8})<\/Name>/)?.[1]).filter(Boolean).map((name) => ({
+    name,
+    date: name.match(/WaterQuality_(\d{2})(\d{2})(\d{4})/).slice(1).reverse().join("-")
+  })).sort((first, second) => first.date.localeCompare(second.date));
+  if (!layers.length) return null;
+  const surveys = [];
+  for (let index = 0; index < layers.length; index += 4) {
+    const batch = await Promise.all(layers.slice(index, index + 4).map(async (layer) => {
+      const featureUrl = new URL(endpoint);
+      featureUrl.search = new URLSearchParams({
+        service: "WFS",
+        version: "1.0.0",
+        request: "GetFeature",
+        typeName: `ChalatatSongkhla:${layer.name}`,
+        outputFormat: "application/json"
+      });
+      const featureResponse = await safeFetch(featureUrl, {}, 1e4);
+      if (!featureResponse?.ok) return null;
+      const data = await featureResponse.json();
+      const features = data.features || [];
+      if (!features.length) return null;
+      return {
+        layer: layer.name,
+        date: features[0].properties?.date || layer.date,
+        features
+      };
+    }));
+    surveys.push(...batch.filter(Boolean));
+  }
+  return surveys.length ? { surveys } : null;
+}
+__name(fetchWaterQualitySurveys, "fetchWaterQualitySurveys");
 var worker_default = {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname === "/api/water-quality") {
+      if (request.method !== "GET") return jsonResponse({ error: "Method not allowed" }, 405);
+      const data = await fetchWaterQualitySurveys();
+      if (!data) return jsonResponse({ error: "Water quality data unavailable" }, 502);
+      return jsonResponse(data);
+    }
     if (url.pathname === "/api/weather") {
       if (request.method !== "GET") return jsonResponse({ error: "Method not allowed" }, 405);
       if (!env.TMD_API_TOKEN && (!env.TMD_WEATHER_UID || !env.TMD_WEATHER_UKEY)) {
@@ -182,7 +231,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-sIx8rN/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-EbIttz/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -214,7 +263,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-sIx8rN/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-EbIttz/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

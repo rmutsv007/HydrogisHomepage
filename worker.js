@@ -1,10 +1,13 @@
 const TMD_API_BASE = "https://data.tmd.go.th/nwpapi/v1/forecast/location";
 const TMD_WEATHER_TODAY = "https://data.tmd.go.th/api/WeatherToday/V2/";
 
-function jsonResponse(body, status = 200) {
+function jsonResponse(body, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json; charset=utf-8" },
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      ...extraHeaders,
+    },
   });
 }
 
@@ -133,15 +136,38 @@ async function fetchWaterQualitySurveys() {
   return surveys.length ? { surveys } : null;
 }
 
+let waterQualityMemoryCache = { data: null, expiresAt: 0 };
+const WATER_QUALITY_CACHE_TTL_MS = 5 * 60 * 1000;
+
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     if (url.pathname === "/api/water-quality") {
       if (request.method !== "GET") return jsonResponse({ error: "Method not allowed" }, 405);
+      const cacheHeaders = { "cache-control": "public, max-age=300, s-maxage=600, stale-while-revalidate=300" };
+      const now = Date.now();
+      if (waterQualityMemoryCache.data && now < waterQualityMemoryCache.expiresAt) {
+        return jsonResponse(waterQualityMemoryCache.data, 200, cacheHeaders);
+      }
+
+      const cache = typeof caches !== "undefined" ? caches.default : null;
+      const cacheKey = new Request(url.toString(), request);
+      if (cache) {
+        const cachedResponse = await cache.match(cacheKey);
+        if (cachedResponse) return cachedResponse;
+      }
+
       const data = await fetchWaterQualitySurveys();
       if (!data) return jsonResponse({ error: "Water quality data unavailable" }, 502);
-      return jsonResponse(data);
+
+      waterQualityMemoryCache = { data, expiresAt: now + WATER_QUALITY_CACHE_TTL_MS };
+      const response = jsonResponse(data, 200, cacheHeaders);
+      if (cache) {
+        const putPromise = cache.put(cacheKey, response.clone());
+        if (ctx?.waitUntil) ctx.waitUntil(putPromise);
+      }
+      return response;
     }
 
     if (url.pathname === "/api/weather") {

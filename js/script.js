@@ -1,34 +1,3 @@
-// ข้อมูลตัวอย่างวันที่ตรวจล่าสุด (ควรเชื่อมต่อ API จริงในอนาคต)
-const surveyDates = [
-  "13 มี.ค. 2026",
-  "28 มี.ค. 2026",
-  "12 เม.ย. 2026",
-  "27 เม.ย. 2026",
-  "11 พ.ค. 2026",
-  "26 พ.ค. 2026",
-  "11 มิ.ย. 2026",
-  "27 มิ.ย. 2026",
-  "12 ก.ค. 2026",
-  "23 ก.ค. 2026",
-  "12 ส.ค. 2026",
-];
-
-function renderDateCards(containerId, iconUrl, limit = 6) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-
-  const latestDates = surveyDates.slice(-limit);
-  container.innerHTML = latestDates
-    .map(
-      (date) => `
-        <a class="data-card" href="https://hydrogis.surveywms.com/" target="_blank" rel="noopener">
-          <img src="${iconUrl}" alt="${date}" />
-          <span>${date}</span>
-        </a>`
-    )
-    .join("");
-}
-
 function formatQualityDate(value) {
   const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!match) return "วันที่ไม่ระบุ";
@@ -61,6 +30,45 @@ function formatQualityCellValue(value) {
   return value === null || value === undefined || value === "" ? "—" : String(value);
 }
 
+function getQualityCellTone(column, rawValue) {
+  if (rawValue === null || rawValue === undefined || rawValue === "") return null;
+  const text = String(rawValue).trim();
+  if (!text || text === "—" || text === "-") return null;
+
+  if (column === "ph") {
+    const num = Number(text);
+    if (!Number.isFinite(num)) return null;
+    if (num >= 6.5 && num <= 8.5) return "ok";
+    if (num >= 6.0 && num <= 9.0) return "warn";
+    return "danger";
+  }
+
+  if (column === "ecoli") {
+    if (/ไม่พบ|ไม่มี|< ?1/i.test(text)) return "ok";
+    const num = Number(text.replace(/,/g, ""));
+    if (!Number.isFinite(num)) return null;
+    if (num <= 100) return "ok";
+    if (num <= 1000) return "warn";
+    return "danger";
+  }
+
+  if (column === "coliform") {
+    if (/ไม่พบ|ไม่มี|< ?1/i.test(text)) return "ok";
+    const num = Number(text.replace(/,/g, ""));
+    if (!Number.isFinite(num)) return null;
+    if (num <= 1000) return "ok";
+    if (num <= 5000) return "warn";
+    return "danger";
+  }
+
+  if (column === "oil") {
+    if (/ไม่พบ|ไม่มี|ปกติ/.test(text)) return "ok";
+    return "warn";
+  }
+
+  return null;
+}
+
 const qualityColumnLabels = {
   time: "เวลา",
   location: "จุดเก็บตัวอย่าง",
@@ -75,7 +83,6 @@ const qualityColumnLabels = {
 };
 
 const qualitySortIconSource = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAABNUlEQVR4AdyUvWoCQRSFd5M2eYOQpEuZHwiEQKqUySOkyKOlyCNoaSWIYKGWdiq+gba6fgdHmL3u+rMzIij37J173TkfM8zORXLk3+kBWZbdoFu7UHpv6NX2bb3PCv6Y9I9sNGg0gTySS2MfQNnkgfujtg0SApgB6KNLVC+DhADwTaY8vlCKBHki5yIUkKRp2sXxGxVCggEY+xCVuQMRBSBXt5J3xloNaRXRALIDMkJDjdeKClib+vnMAHws9+jOX2Lo2G5RDcMWkGdylLCAH1wzpPslCiQH4Ij1MNc5FkSf/gt1UOQAcnIQ3S8Lam3ZNblybADkBES3pCBzat33V+RKUQiQk4Nou1Q+6FFFpQCZOcgH409kQwfi1zZtvRWgl4F0UFtjX/TGaOL3isY7AUWTDuktAQAA//8acUEnAAAABklEQVQDAChOTjGWxC7EAAAAAElFTkSuQmCC";
-let activeQualityFilterColumn = "time";
 let activeQualitySortColumn = "time";
 let qualitySortDirection = "ascending";
 
@@ -92,6 +99,12 @@ const bacteriaMetricLabels = {
   coliform: "Coliform",
 };
 
+const bacteriaResetZoomBtn = document.getElementById("bacteriaResetZoom");
+bacteriaResetZoomBtn?.addEventListener("click", () => {
+  bacteriaChart?.resetZoom();
+  bacteriaResetZoomBtn.hidden = true;
+});
+
 function renderBacteriaTrend(surveys) {
   const canvas = document.getElementById("bacteriaChart");
   const status = document.getElementById("bacteriaChartStatus");
@@ -104,7 +117,8 @@ function renderBacteriaTrend(surveys) {
   const locations = [...new Set(surveys.flatMap((survey) =>
     survey.features.map((feature) => feature.properties?.location).filter(Boolean)
   ))];
-  const colors = ["#0077b6", "#c05a45", "#37805e", "#bb8618", "#7555a3", "#168a91", "#566578"];
+  const colors = ["#0071e3", "#ff9500", "#34c759", "#af52de", "#ff3b30", "#32ade6", "#5856d6"];
+  const chartFontFamily = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Sukhumvit Set", "Sarabun", sans-serif';
   const datasets = locations.map((location, index) => ({
     label: location,
     data: surveys.map((survey) => {
@@ -118,15 +132,18 @@ function renderBacteriaTrend(surveys) {
     }),
     borderColor: colors[index % colors.length],
     backgroundColor: colors[index % colors.length],
-    borderWidth: 2,
+    borderWidth: 2.2,
     pointHitRadius: 14,
-    pointRadius: 3,
-    pointHoverRadius: 5,
-    tension: 0.25,
+    pointRadius: 3.5,
+    pointHoverRadius: 5.5,
+    pointBackgroundColor: "#ffffff",
+    pointBorderWidth: 2,
+    tension: 0.3,
     spanGaps: false,
   }));
 
   bacteriaChart?.destroy();
+  if (bacteriaResetZoomBtn) bacteriaResetZoomBtn.hidden = true;
   const chartDescription = `กราฟแนวโน้มผลตรวจ ${bacteriaMetricLabels[activeBacteriaMetric]} แยกตามจุดเก็บตัวอย่าง`;
   canvas.setAttribute("aria-label", chartDescription);
   canvas.textContent = chartDescription;
@@ -148,17 +165,39 @@ function renderBacteriaTrend(surveys) {
             mode: "x",
             pinch: { enabled: true },
             wheel: { enabled: true, modifierKey: "ctrl" },
+            onZoomComplete: ({ chart }) => {
+              if (bacteriaResetZoomBtn) {
+                bacteriaResetZoomBtn.hidden = !(chart.isZoomedOrPanned?.() ?? true);
+              }
+            },
           },
         },
         legend: {
           position: "bottom",
-          labels: { boxHeight: 9, boxWidth: 9, padding: 16, pointStyle: "circle", usePointStyle: true },
+          labels: {
+            boxHeight: 8,
+            boxWidth: 8,
+            color: "#1d1d1f",
+            font: { family: chartFontFamily, size: 12, weight: "500" },
+            padding: 18,
+            pointStyle: "circle",
+            usePointStyle: true,
+          },
         },
         tooltip: {
           axis: "x",
+          backgroundColor: "rgba(255, 255, 255, 0.96)",
+          titleColor: "#1d1d1f",
+          bodyColor: "#3a3a3c",
+          borderColor: "rgba(0, 0, 0, 0.08)",
+          borderWidth: 1,
+          cornerRadius: 12,
+          padding: 12,
           caretPadding: 10,
           intersect: true,
           mode: "index",
+          titleFont: { family: chartFontFamily, size: 13, weight: "600" },
+          bodyFont: { family: chartFontFamily, size: 12 },
           callbacks: {
             label: (context) => `${context.dataset.label}: ${bacteriaMetricLabels[activeBacteriaMetric]} ${new Intl.NumberFormat("th-TH").format(context.parsed.y)}`,
           },
@@ -166,15 +205,17 @@ function renderBacteriaTrend(surveys) {
       },
       scales: {
         x: {
-          title: { display: true, text: "วันที่สำรวจ", color: "#5a6b73", font: { family: "Segoe UI, Tahoma, sans-serif" } },
+          title: { display: true, text: "วันที่สำรวจ", color: "#6e6e73", font: { family: chartFontFamily, size: 12, weight: "500" } },
           grid: { display: false },
-          ticks: { color: "#5a6b73", maxRotation: 45, minRotation: 0 },
+          border: { color: "rgba(0, 0, 0, 0.08)" },
+          ticks: { color: "#6e6e73", font: { family: chartFontFamily, size: 11 }, maxRotation: 45, minRotation: 0 },
         },
         y: {
           beginAtZero: true,
-          title: { display: true, text: bacteriaMetricLabels[activeBacteriaMetric], color: "#5a6b73", font: { family: "Segoe UI, Tahoma, sans-serif" } },
-          ticks: { color: "#5a6b73", callback: (value) => new Intl.NumberFormat("th-TH").format(value) },
-          grid: { color: "rgba(2, 62, 138, 0.09)" },
+          title: { display: true, text: bacteriaMetricLabels[activeBacteriaMetric], color: "#6e6e73", font: { family: chartFontFamily, size: 12, weight: "500" } },
+          border: { display: false },
+          ticks: { color: "#6e6e73", font: { family: chartFontFamily, size: 11 }, callback: (value) => new Intl.NumberFormat("th-TH").format(value) },
+          grid: { color: "rgba(0, 0, 0, 0.05)" },
         },
       },
     },
@@ -241,10 +282,19 @@ function renderSelectedWaterQuality() {
   const rows = sortedFeatures.map((feature) => {
     const values = getQualityRowValues(feature.properties || {});
     const row = document.createElement("tr");
-    Object.values(values).forEach((value) => {
+    Object.entries(values).forEach(([column, value]) => {
       const cell = document.createElement("td");
-      cell.textContent = formatQualityCellValue(value);
-      if (cell.textContent !== "—") cell.title = cell.textContent;
+      const formatted = formatQualityCellValue(value);
+      const tone = getQualityCellTone(column, value);
+      if (tone && formatted !== "—") {
+        const pill = document.createElement("span");
+        pill.className = `quality-pill quality-pill-${tone}`;
+        pill.textContent = formatted;
+        cell.append(pill);
+      } else {
+        cell.textContent = formatted;
+      }
+      if (formatted !== "—") cell.title = formatted;
       row.append(cell);
     });
     return row;
@@ -324,6 +374,54 @@ navToggle?.addEventListener("click", () => {
 // Footer year
 const yearEl = document.getElementById("year");
 if (yearEl) yearEl.textContent = new Date().getFullYear() + 543; // พ.ศ.
+
+// macOS Quick Look Lightbox for media cards
+const quicklookModal = document.getElementById("quicklookModal");
+const quicklookImage = document.getElementById("quicklookImage");
+const quicklookTitle = document.getElementById("quicklookTitle");
+const quicklookOpen = document.getElementById("quicklookOpen");
+const quicklookClose = document.getElementById("quicklookClose");
+
+function openQuickLook(src, title, href) {
+  if (!quicklookModal || !quicklookImage || !quicklookTitle) return;
+  quicklookImage.src = src;
+  quicklookImage.alt = title;
+  quicklookTitle.textContent = title;
+  if (quicklookOpen) {
+    quicklookOpen.href = href || src;
+    quicklookOpen.hidden = false;
+  }
+  quicklookModal.showModal();
+}
+
+if (quicklookModal) {
+  document.querySelectorAll(".media-card").forEach((card) => {
+    const img = card.querySelector("img");
+    const caption = card.querySelector("span");
+    if (!img) return;
+    if (card.tagName !== "A") {
+      card.setAttribute("role", "button");
+      card.setAttribute("tabindex", "0");
+    }
+    const triggerPreview = (event) => {
+      event.preventDefault();
+      const title = caption?.textContent?.replace(/\s+/g, " ").trim() || img.alt || "พรีวิวรูปภาพ";
+      const href = card.getAttribute("href") || img.src;
+      openQuickLook(img.src, title, href);
+    };
+    card.addEventListener("click", triggerPreview);
+    card.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        triggerPreview(event);
+      }
+    });
+  });
+
+  quicklookClose?.addEventListener("click", () => quicklookModal.close());
+  quicklookModal.addEventListener("click", (event) => {
+    if (event.target === quicklookModal) quicklookModal.close();
+  });
+}
 
 // Weather: ask for the user's location, then fall back to Bangkok when unavailable.
 const weatherConfig = {
